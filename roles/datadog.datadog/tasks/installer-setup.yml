@@ -1,0 +1,184 @@
+---
+- name: Generate installer trace ID
+  set_fact:
+    datadog_installer_trace_id: "{{ 9999999999999999999 | random }}"
+
+- name: Start duration measurements
+  command: "date +%s%N"
+  register: datadog_installer_start_time
+  changed_when: true
+
+# Dispatch through an include_tasks in order to be able to use the same variable name
+# for the tasks results.
+# Doing the install here directly would always set the latest task to the used register
+# including when the task is skipped.
+- name: Include installer DNF install task
+  include_tasks: pkg-redhat/install-installer-dnf.yml
+  when: ansible_facts.os_family in ["RedHat", "Rocky", "AlmaLinux"] and not ansible_check_mode and ansible_pkg_mgr == "dnf"
+
+- name: Include installer YUM install task
+  include_tasks: pkg-redhat/install-installer-yum.yml
+  when: ansible_facts.os_family in ["RedHat", "Rocky", "AlmaLinux"] and not ansible_check_mode and ansible_pkg_mgr == "yum"
+
+- name: Include installer DEB install task
+  include_tasks: pkg-debian/install-installer.yml
+  when: ansible_facts.os_family == "Debian" and not ansible_check_mode
+
+- name: Include installer Zypper install task
+  include_tasks: pkg-suse/install-installer-zypper.yml
+  when: ansible_facts.os_family == "Suse" and not ansible_check_mode
+
+- name: Set the datadog agent version
+  set_fact:
+    datadog_agent_major_version: "{{ datadog_agent_version.split('.', 1).0 }}"
+    datadog_agent_minor_version: "{{ datadog_agent_version.split('.', 1).1 }}"
+  when: datadog_agent_version
+
+- name: Bootstrap the installer
+  command: /usr/bin/datadog-bootstrap bootstrap
+  register: datadog_installer_bootstrap_result
+  environment:
+    DATADOG_TRACE_ID: "{{ datadog_installer_trace_id }}"
+    DATADOG_PARENT_ID: "{{ datadog_installer_trace_id }}"
+    DD_SITE: "{{ datadog_site | default('datadoghq.com') }}"
+    DD_API_KEY: "{{ datadog_api_key }}"
+    DD_REMOTE_UPDATES: "{{ 'true' if datadog_remote_updates is defined and datadog_remote_updates | bool else '' }}"
+    DD_APM_INSTRUMENTATION_ENABLED: "{{ datadog_apm_instrumentation_enabled }}"
+    DD_APM_INSTRUMENTATION_LIBRARIES: "{{ datadog_apm_instrumentation_libraries | join(',') }}"
+    DD_INSTALLER_REGISTRY_AUTH_INSTALLER_PACKAGE: "{{ datadog_installer_auth }}"
+    DD_INSTALLER_REGISTRY_URL_INSTALLER_PACKAGE: "{{ datadog_installer_registry }}"
+    DD_AGENT_MAJOR_VERSION: "{{ datadog_agent_major_version | default('') }}"
+    DD_AGENT_MINOR_VERSION: "{{ datadog_agent_minor_version | default('') }}"
+  ignore_errors: true
+  when: not datadog_installer_install_result.failed
+  changed_when: true
+
+- name: Check if installer owns datadog-agent package
+  command: datadog-installer is-installed "{{ datadog_agent_flavor }}"
+  failed_when: datadog_installer_owns_agent.rc != 0 and datadog_installer_owns_agent.rc != 10
+  register: datadog_installer_owns_agent
+  when: not datadog_installer_bootstrap_result.failed
+  changed_when: true
+
+- name: Check if installer owns apm injector package
+  command: datadog-installer is-installed "{{ datadog_inject_apm_flavor }}"
+  failed_when: datadog_installer_owns_injector_result.rc != 0 and datadog_installer_owns_injector_result.rc != 10
+  register: datadog_installer_owns_injector_result
+  when: not datadog_installer_bootstrap_result.failed
+  changed_when: true
+
+- name: Register if the installer owns apm injector package
+  set_fact:
+    datadog_installer_owns_injector: "{{ datadog_installer_owns_injector_result.rc == 0 }}"
+  when: not datadog_installer_bootstrap_result.failed
+
+- name: Disable agent install if owned by installer
+  set_fact:
+    agent_datadog_skip_install: true
+  when: not datadog_installer_bootstrap_result.failed and datadog_installer_owns_agent.rc == 0
+
+- name: Query APM packages owned by installer
+  command: datadog-installer is-installed "datadog-apm-library-{{ item }}"
+  register: datadog_installer_owned_apm_packages
+  loop: "{{ datadog_apm_instrumentation_libraries }}"
+  when: not datadog_installer_bootstrap_result.failed
+  failed_when: datadog_installer_owned_apm_packages.rc != 0 and datadog_installer_owned_apm_packages.rc != 10
+  changed_when: true
+  environment:
+    DD_API_KEY: "{{ datadog_api_key }}"
+
+- name: Save APM packages before filtering
+  set_fact:
+    datadog_apm_instrumentation_libraries_unfiltered: "{{ datadog_apm_instrumentation_libraries }}"
+
+- name: Filter APM packages owned by the installer
+  set_fact:
+    datadog_apm_instrumentation_libraries: "{{ datadog_apm_instrumentation_libraries | difference([item.item]) }}"
+  when:
+    - item.rc == 0
+    - not datadog_installer_bootstrap_result.failed
+  loop: "{{ datadog_installer_owned_apm_packages.results }}"
+
+- name: Update version number for APM libraries not owned by the installer
+  set_fact:
+    pre_processed_datadog_apm_libraries: "{{ pre_processed_datadog_apm_libraries | default([], true) | difference(
+      [(item.item | regex_replace('$', '-1') | regex_replace('^datadog-apm-library-', '') )]
+      + [(item.item | regex_replace('[:]latest', '')  | regex_replace('^datadog-apm-library-', '') )]) }}"
+  loop: "{{ datadog_installer_owned_apm_packages.results }}"
+  when:
+    - item.rc == 0
+    - not datadog_installer_bootstrap_result.failed
+
+- name: Stop duration measurements
+  command: "date +%s%N"
+  register: datadog_installer_stop_time
+  changed_when: true
+
+- name: Setup telemetry body
+  set_fact:
+    telemetry_body: "{{ lookup(
+      'template',
+      'templates/installer-telemetry.j2',
+      template_vars=dict(
+          trace_id=datadog_installer_trace_id,
+          hostname=ansible_hostname,
+          system=ansible_facts.system,
+          os_family=ansible_facts.os_family,
+          arch=ansible_facts.machine,
+          kernel=ansible_facts.kernel,
+          kernel_version=ansible_facts.kernel_version,
+          role_version=role_version,
+          rc=datadog_installer_bootstrap_result.rc if datadog_installer_bootstrap_result is defined else datadog_installer_install_result.rc,
+          stderr=datadog_installer_install_result.stderr | default('') + datadog_installer_bootstrap_result.stderr | default(''),\n
+          start_time=datadog_installer_start_time.stdout | int,
+          stop_time=datadog_installer_stop_time.stdout | int,
+          packages_to_install=datadog_apm_instrumentation_libraries_unfiltered,
+          packages_to_install_filtered=datadog_apm_instrumentation_libraries,
+      )) }}"
+
+- name: Send Installer telemetry traces
+  uri:
+    url: "https://instrumentation-telemetry-intake.{{ datadog_site | default('datadoghq.com') }}/api/v2/apmtelemetry"
+    body: "{{ telemetry_body }}"
+    method: POST
+    status_code: [202]
+    headers:
+      DD-Api-Key: "{{ datadog_api_key }}"
+    body_format: json
+  failed_when: false
+
+- name: Setup logs body
+  set_fact:
+    logs_body: "{{ lookup(
+      'template',
+      'templates/installer-logs.j2',
+      template_vars=dict(
+          stop_time=datadog_installer_stop_time.stdout,
+          trace_id=datadog_installer_trace_id,
+          hostname=ansible_hostname,
+          system=ansible_facts.system,
+          os_family=ansible_facts.os_family,
+          arch=ansible_facts.machine,
+          kernel=ansible_facts.kernel,
+          kernel_version=ansible_facts.kernel_version,
+          role_version=role_version,
+          stdout=datadog_installer_install_result.stdout | default('') + datadog_installer_bootstrap_result.stdout | default(''),
+          stderr=datadog_installer_install_result.stderr | default('') + datadog_installer_bootstrap_result.stderr | default(''),\n
+      )
+      )}}"
+
+- name: Send Installer telemetry logs
+  uri:
+    url: "https://instrumentation-telemetry-intake.{{ datadog_site | default('datadoghq.com') }}/api/v2/apmtelemetry"
+    body: "{{ logs_body }}"
+    method: POST
+    status_code: [202]
+    headers:
+      DD-Api-Key: "{{ datadog_api_key }}"
+    body_format: json
+  failed_when: false
+
+- name: Propagate failures after telemetry
+  fail:
+    msg: "Installer bootstrap failed: {{ datadog_installer_bootstrap_result.stderr }}"
+  when: datadog_installer_bootstrap_result.failed

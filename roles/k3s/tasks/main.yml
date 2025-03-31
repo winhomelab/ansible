@@ -1,0 +1,14 @@
+---
+# Following install guides:
+# https://docs.k3s.io/quick-start
+
+- name: Install k3s
+
+  block:
+    - name: Create kubeadm config
+      ansible.builtin.shell: |
+        set -o pipefail
+        curl -sfL https://get.k3s.io | sh -
+      args:
+        executable: /bin/bash
+        creates: /usr/local/bin/k3s

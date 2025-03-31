@@ -1,0 +1,10 @@
+---
+- name: Install k3s
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Setup k3s on linux
+      ansible.builtin.import_role:
+        name: k3s
