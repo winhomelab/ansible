@@ -43,7 +43,7 @@
 
     - name: Install sudo
       ansible.builtin.apt:
-        name: vim
+        name: sudo
         state: present
         update_cache: true
 
