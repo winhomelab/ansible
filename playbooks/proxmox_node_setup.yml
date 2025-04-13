@@ -1,0 +1,23 @@
+---
+# =============================================================================
+# Proxmox Node Setup Playbook
+# =============================================================================
+# This playbook sets up common configurations for all Proxmox nodes
+# =============================================================================
+
+- name: Setup Proxmox Nodes
+  hosts: all
+  become: true
+  vars:
+    ansible_user: ansible
+    # Use the admin_ssh_key for hosts that might not have the ansible key set up yet
+    ansible_ssh_private_key_file: '{{ playbook_dir }}/ssh_keys/admin_ssh_key'
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=publickey'
+  gather_facts: false
+  pre_tasks:
+    - name: Gather facts without sudo
+      ansible.builtin.setup:
+      become: false
+
+  roles:
+    - proxmox_common

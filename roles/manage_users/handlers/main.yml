@@ -1,23 +1,18 @@
 ---
 # =============================================================================
-# Manage Users Role - Handlers
+# Manage Users Role Handlers
 # =============================================================================
-# This file contains handlers for the manage_users role
+# Handlers for the manage_users role
 # =============================================================================
 
-- name: Update locale
-  ansible.builtin.command: update-locale LANG=en_US.UTF-8
-  become: true
+- name: update locale
+  ansible.builtin.command: update-locale
   changed_when: true
-  notify: Restart SSH
-
-- name: Restart SSH
-  ansible.builtin.service:
-    name: ssh
-    state: restarted
 
 - name: Display user creation status
   ansible.builtin.debug:
-    msg: "User {{ item.name }} created on {{ inventory_hostname }}"
-  loop: "{{ manage_users_users }}"
-  when: user_creation is changed 
+    msg: "User {{ item.item.name }} {{ 'created' if item.changed else 'already exists' }}"
+  loop: "{{ user_creation.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when: user_creation is defined and user_creation.results is defined 

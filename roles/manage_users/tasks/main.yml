@@ -54,20 +54,6 @@
   register: user_creation
   notify: Display user creation status
 
-# Debug: Show ansible_env.HOME value
-- name: Debug - Show ansible_env.HOME value
-  ansible.builtin.debug:
-    msg: "ansible_env.HOME: {{ ansible_env.HOME }}"
-  tags: ssh
-
-# Debug: Show all users and their SSH keys
-- name: Debug - Show users and their SSH keys
-  ansible.builtin.debug:
-    msg: "User: {{ item.name }}, SSH keys: {{ item.ssh_keys | default([]) }}"
-  loop: "{{ manage_users_users }}"
-  when: item.ssh_keys is defined
-  tags: ssh
-
 # Ensure .ssh directories exist for users with SSH keys
 - name: Ensure .ssh directory exists for users with SSH keys
   ansible.builtin.file:
@@ -91,24 +77,10 @@
   become: false
   tags: ssh
 
-# Debug: Show SSH key check results
-- name: Debug - Show SSH key check results
-  ansible.builtin.debug:
-    msg: "Key path: {{ item.item }}, Exists: {{ item.stat.exists }}"
-  loop: "{{ ssh_key_stat.results }}"
-  when: ssh_key_stat.results is defined
-  tags: ssh
-
 # Set fact for existing SSH keys
 - name: Set fact for existing SSH keys
   ansible.builtin.set_fact:
     existing_ssh_keys: "{{ ssh_key_stat.results | selectattr('stat.exists') | map(attribute='item') | list }}"
-  tags: ssh
-
-# Debug: Show existing SSH keys
-- name: Debug - Show existing SSH keys
-  ansible.builtin.debug:
-    msg: "Existing SSH keys: {{ existing_ssh_keys }}"
   tags: ssh
 
 # Fail if no SSH keys are found
@@ -133,12 +105,7 @@
   ansible.builtin.set_fact:
     ssh_key_map: "{{ ssh_key_map | default({}) | combine({item.item: item.content | b64decode}) }}"
   loop: "{{ ssh_key_contents.results }}"
-  tags: ssh
-
-# Debug: Show SSH key map
-- name: Debug - Show SSH key map
-  ansible.builtin.debug:
-    msg: "SSH key map: {{ ssh_key_map }}"
+  no_log: true
   tags: ssh
 
 # Manage authorized_keys files for users with existing SSH keys
@@ -170,17 +137,6 @@
     - item.ssh_keys is defined
     - item.ssh_keys | length > 0
     - (item.ssh_keys | select('in', existing_ssh_keys) | list) | length == 0
-  tags: ssh
-
-# Debug: Show authorized_keys content for each user
-- name: Debug - Show authorized_keys content
-  ansible.builtin.debug:
-    msg: "User: {{ item.name }}, Authorized keys: {{ item.ssh_keys | select('in', existing_ssh_keys) | list }}"
-  loop: "{{ manage_users_users }}"
-  when:
-    - item.ssh_keys is defined
-    - item.ssh_keys | length > 0
-    - (item.ssh_keys | select('in', existing_ssh_keys) | list) | length > 0
   tags: ssh
 
 # Display warning for missing SSH keys
