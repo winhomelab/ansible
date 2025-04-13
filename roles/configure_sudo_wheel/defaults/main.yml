@@ -1,0 +1,16 @@
+---
+# =============================================================================
+# Default Variables for Sudo and Wheel Group Configuration
+# =============================================================================
+
+# Group configuration
+wheel_group_name: wheel
+wheel_group_state: present
+
+# Sudo configuration
+sudo_wheel_line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+sudo_wheel_state: present
+
+# Users to add to wheel group
+wheel_users:
+  - ansible 
