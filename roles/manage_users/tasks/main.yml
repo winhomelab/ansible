@@ -31,14 +31,14 @@
   register: sudo_group_exists
   ignore_errors: true
 
-- name: Add wheel group to sudoers if sudo group exists
+- name: Allow managed users to run any command without password
   ansible.builtin.lineinfile:
     path: /etc/sudoers
-    regexp: ^%wheel
-    line: "%wheel ALL=(ALL) NOPASSWD: ALL"
+    regexp: '^{{ item.name }}\s+ALL=\(ALL\)\s+NOPASSWD:\s+ALL$'
+    line: '{{ item.name }} ALL=(ALL) NOPASSWD: ALL'
+    validate: 'visudo -cf %s'
     state: present
-    validate: visudo -cf %s
-  when: sudo_group_exists is success
+  loop: "{{ manage_users_users }}"
 
 - name: Create users
   ansible.builtin.user:
