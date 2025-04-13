@@ -47,4 +47,3 @@
     - name: Display sudo result
       ansible.builtin.debug:
         msg: 'Successfully executed sudo command as {{ sudo_result.stdout }}'
-
