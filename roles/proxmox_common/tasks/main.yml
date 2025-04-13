@@ -1,0 +1,44 @@
+---
+# =============================================================================
+# Proxmox Common Role
+# =============================================================================
+# This role applies common configurations to Proxmox nodes
+# =============================================================================
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Disable UFW if installed
+  ansible.builtin.service:
+    name: ufw
+    state: stopped
+    enabled: false
+  failed_when: true
+
+- name: Remove UFW package if installed
+  ansible.builtin.package:
+    name: ufw
+    state: absent
+  when: ansible_os_family == "Debian"
+
+- name: Install required packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ required_packages }}"
+  when: required_packages is defined
+
+- name: Configure timezone
+  ansible.builtin.timezone:
+    name: "{{ timezone | default('UTC') }}"
+
+- name: Configure NTP
+  ansible.builtin.include_tasks: ntp.yml
+  when: configure_ntp | default(true)
+
+- name: Enable unattended upgrades
+  ansible.builtin.include_role:
+    name: enable_unattended_upgrades
+  when: ansible_os_family == "Debian"

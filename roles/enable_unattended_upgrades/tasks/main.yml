@@ -1,0 +1,39 @@
+---
+# =============================================================================
+# Enable Unattended Upgrades Role
+# =============================================================================
+# This role configures unattended-upgrades for automatic system updates
+# =============================================================================
+
+- name: Install unattended-upgrades package
+  package:
+    name: unattended-upgrades
+    state: present
+  register: install_result
+  ignore_errors: true
+
+- name: Enable unattended-upgrades service
+  service:
+    name: unattended-upgrades
+    state: started
+    enabled: true
+  when: install_result is success
+
+- name: Configure unattended-upgrades
+  template:
+    src: 50unattended-upgrades.j2
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    mode: '0644'
+  when: install_result is success
+
+- name: Create log directory
+  file:
+    path: /var/log/unattended-upgrades
+    state: directory
+    mode: '0755'
+  when: install_result is success
+
+- name: Display configuration status
+  debug:
+    msg: "Unattended upgrades enabled on {{ inventory_hostname }}"
+  when: install_result is success 

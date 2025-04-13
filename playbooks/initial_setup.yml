@@ -2,7 +2,7 @@
 # =============================================================================
 # Initial Setup Playbook
 # =============================================================================
-# This playbook sets up the ansible user with sudo access on all hosts
+# This playbook performs initial setup of ansible user and SSH configuration
 # =============================================================================
 
 - name: Initial setup of ansible user
@@ -20,7 +20,6 @@
 
   roles:
     - manage_users
-    - configure_sudo_wheel
 
 - name: Verify ansible user setup
   hosts: all
@@ -48,3 +47,4 @@
     - name: Display sudo result
       ansible.builtin.debug:
         msg: 'Successfully executed sudo command as {{ sudo_result.stdout }}'
+

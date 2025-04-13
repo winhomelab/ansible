@@ -1,0 +1,22 @@
+---
+# =============================================================================
+# Proxmox Common Role - Handlers
+# =============================================================================
+
+- name: Restart NTP
+  ansible.builtin.service:
+    name: "{{ ntp_service }}"
+    state: restarted
+  when: ntp_service is defined
+
+- name: Restart SSH
+  ansible.builtin.service:
+    name: "{{ ssh_service }}"
+    state: restarted
+  when: ssh_service is defined
+
+- name: Restart monitoring
+  ansible.builtin.service:
+    name: "{{ monitoring_service }}"
+    state: restarted
+  when: monitoring_service is defined

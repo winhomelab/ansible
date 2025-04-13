@@ -1,0 +1,33 @@
+# Update package list (in days)
+APT::Periodic::Update-Package-Lists "{{ unattended_update_package_lists }}";
+
+# Run unattended upgrade (in days)
+APT::Periodic::Unattended-Upgrade "{{ unattended_unattended_upgrade }}";
+
+# Download upgradeable packages (in days)
+APT::Periodic::Download-Upgradeable-Packages "{{ unattended_download_upgradeable }}";
+
+# Clean up old packages (in days)
+APT::Periodic::AutocleanInterval "{{ unattended_autoclean_interval }}";
+
+# Log level (0=minimal, 1=basic, 2=verbose)
+APT::Periodic::Verbose "{{ unattended_verbose }}";
+
+# Send email notifications
+Unattended-Upgrade::Mail "{{ unattended_mail }}";
+
+# Remove unused dependencies after upgrade
+Unattended-Upgrade::Remove-Unused-Dependencies "{{ unattended_remove_unused }}";
+
+# Automatic reboot settings
+Unattended-Upgrade::Automatic-Reboot "{{ unattended_automatic_reboot }}";
+Unattended-Upgrade::Automatic-Reboot-Time "{{ unattended_reboot_time }}";
+
+# Package blacklist
+{% if unattended_package_blacklist | length > 0 %}
+Unattended-Upgrade::Package-Blacklist {
+{% for package in unattended_package_blacklist %}
+    "{{ package }}";
+{% endfor %}
+}
+{% endif %} 
