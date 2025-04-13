@@ -1,0 +1,25 @@
+# SSH keys
+ssh_keys/
+*.pem
+*.key
+*.pub
+
+# Inventory with real IPs
+inventory.yml
+
+# Local vars
+group_vars/all.yml
+host_vars/
+
+# Ansible vault files
+*.vault
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# OS specific files
+.DS_Store
+Thumbs.db 
