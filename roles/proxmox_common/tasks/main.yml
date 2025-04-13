@@ -10,32 +10,6 @@
     update_cache: true
   when: ansible_os_family == "Debian"
 
-- name: Check if UFW service exists
-  ansible.builtin.stat:
-    path: /etc/init.d/ufw
-  register: ufw_service_check
-
-- name: Disable UFW if installed
-  ansible.builtin.service:
-    name: ufw
-    state: stopped
-    enabled: false
-  when: ufw_service_check.stat.exists
-  failed_when: true
-
-- name: Check if UFW package is installed
-  ansible.builtin.package_facts:
-    manager: auto
-  when: ansible_os_family == "Debian"
-
-- name: Remove UFW package if installed
-  ansible.builtin.package:
-    name: ufw
-    state: absent
-  when:
-    - ansible_os_family == "Debian"
-    - "'ufw' in ansible_facts.packages"
-
 - name: Install required packages
   ansible.builtin.package:
     name: "{{ item }}"
