@@ -19,7 +19,9 @@
       ansible.builtin.setup:
 
   roles:
+    - system_updates
     - manage_users
+    - install_wazuh
 
 - name: Verify ansible user setup
   hosts: all
