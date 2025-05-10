@@ -1,0 +1,80 @@
+---
+# Following https://docs.docker.com/engine/install/ubuntu/
+
+- name: Install docker
+  vars:
+    aws_cli_url: https://awscli.amazonaws.com/AWSCLIV2.pkg
+    aws_cli_tmp_path: /tmp/AWSCLIV2.pkg
+    docker_users:
+      - "{{ ansible_user }}"
+      - "{{ target_user }}"
+  block:
+    - name: Uninstall old versions
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-doc
+          - docker-compose
+          - docker-compose-v2
+          - podman-docker
+          - containerd
+          - runc
+        state: absent
+        purge: true
+
+    - name: Update apt package index
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - software-properties-common
+        state: present
+        update_cache: true
+
+    - name: Add Docker GPG apt key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
+
+    - name: Install Docker packages
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+
+    - name: Start and enable Docker service
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Ensure docker group exists
+      ansible.builtin.group:
+        name: docker
+        state: present
+
+    - name: Add users to docker group
+      ansible.builtin.user:
+        name: "{{ item }}"
+        groups: docker
+        append: true
+      loop: "{{ docker_users | unique }}"
+      when: item | string | length > 0  # Skip empty strings

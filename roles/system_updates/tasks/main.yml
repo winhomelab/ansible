@@ -1,0 +1,27 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: "{{ apt_cache_valid_time }}"
+
+- name: Check if reboot is required
+  stat:
+    path: /var/run/reboot-required
+  register: reboot_required_file
+  changed_when: false
+
+- name: Perform apt upgrade
+  apt:
+    upgrade: "{{ apt_upgrade_type }}"
+    autoremove: "{{ apt_autoremove }}"
+    autoclean: "{{ apt_autoclean }}"
+  register: apt_upgrade
+
+- name: Reboot if required
+  reboot:
+    msg: "{{ reboot_message }}"
+    connect_timeout: "{{ reboot_connect_timeout }}"
+    reboot_timeout: "{{ reboot_timeout }}"
+    pre_reboot_delay: "{{ reboot_pre_delay }}"
+    post_reboot_delay: "{{ reboot_post_delay }}"
+  when: (reboot_required_file.stat.exists or apt_upgrade.changed) and reboot_if_required

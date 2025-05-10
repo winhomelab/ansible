@@ -1,0 +1,12 @@
+---
+# =============================================================================
+# Proxmox Common Role Defaults
+# =============================================================================
+
+# Required packages for Proxmox nodes
+required_packages:
+  - htop
+  - net-tools
+  - vim
+  - curl
+  - chrony
