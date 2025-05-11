@@ -1,0 +1,20 @@
+---
+# =============================================================================
+# Remove Package Role Handlers
+# =============================================================================
+# Handlers for the remove_package role
+# =============================================================================
+
+- name: restart networking
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: restarted
+  loop:
+    - networking
+    - NetworkManager
+  when: ansible_os_family == "Debian"
+
+- name: restart systemd
+  ansible.builtin.systemd:
+    daemon_reload: yes
+  when: ansible_os_family == "Debian" 

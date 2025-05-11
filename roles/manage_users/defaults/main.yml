@@ -1,0 +1,38 @@
+---
+# =============================================================================
+# Default Variables for Manage Users Role
+# =============================================================================
+# This file contains default variables for the manage_users role
+# =============================================================================
+
+# Default admin user name - uses target_user from group_vars/all.yml if available
+manage_users_admin_user: "{{ target_user | default('ansible_admin') }}"
+
+# Define the sudo group based on the OS family
+manage_users_sudo_group: "{{ 'sudo' if ansible_os_family == 'Debian' else 'wheel' }}"
+
+# SSH key files for the ansible user
+manage_users_ansible_ssh_keys:
+  - "{{ playbook_dir }}/ssh_keys/ansible.pub" # Path to your ansible.pub key
+  - "{{ playbook_dir }}/ssh_keys/admin_ssh_key.pub" # Path to your admin_ssh_key.pub
+
+# SSH key files for the target_user (admin_user)
+manage_users_admin_ssh_keys:
+  - "{{ playbook_dir }}/ssh_keys/admin_ssh_key.pub" # Path to your admin_ssh_key.pub
+
+# List of users to create
+manage_users_users:
+  - name: ansible
+    shell: /bin/bash
+    groups: "{{ manage_users_sudo_group }}"
+    create_home: true
+    state: present
+    ssh_keys: "{{ manage_users_ansible_ssh_keys }}"
+
+  - name: "{{ manage_users_admin_user }}"
+    shell: /bin/bash
+    groups:
+      - "{{ manage_users_sudo_group }}"
+    create_home: true
+    state: present
+    ssh_keys: "{{ manage_users_admin_ssh_keys }}"

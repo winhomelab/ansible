@@ -1,0 +1,174 @@
+---
+# =============================================================================
+# Manage Users Role
+# =============================================================================
+# This role creates and configures users on the system
+# =============================================================================
+
+- name: Configure system locale
+  block:
+    - name: Check if locales package is installed
+      ansible.builtin.package_facts:
+        manager: auto
+    
+    - name: Install locales package if not present
+      ansible.builtin.apt:
+        name: locales
+        state: present
+      when: ansible_facts.packages is defined and 'locales' not in ansible_facts.packages
+    
+    - name: Check if locale is installed
+      ansible.builtin.command: locale -a | grep -q "en_US.UTF-8"
+      register: locale_check
+      changed_when: false
+      failed_when: false
+      ignore_errors: true
+    
+    - name: Install locale if not present
+      ansible.builtin.locale_gen:
+        name: en_US.UTF-8
+        state: present
+      when: locale_check.rc != 0
+      notify: update locale
+  when: ansible_os_family == 'Debian'
+
+- name: Ensure sudo group exists
+  ansible.builtin.group:
+    name: "{{ manage_users_sudo_group }}"
+    state: present
+
+- name: Check if sudo group exists
+  ansible.builtin.getent:
+    database: group
+    key: sudo
+  register: sudo_group_exists
+  ignore_errors: true
+
+- name: Allow managed users to run any command without password
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers
+    regexp: '^{{ item.name }}\s+ALL=\(ALL\)\s+NOPASSWD:\s+ALL$'
+    line: '{{ item.name }} ALL=(ALL) NOPASSWD: ALL'
+    validate: 'visudo -cf %s'
+    state: present
+  loop: "{{ manage_users_users }}"
+
+- name: Create users
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    groups: "{{ item.groups | default([]) }}"
+    append: "{{ item.append | default(true) }}"
+    state: "{{ item.state | default('present') }}"
+    create_home: "{{ item.create_home | default(true) }}"
+    password: "{{ item.password | default(omit) }}"
+    update_password: "{{ item.update_password | default('on_create') }}"
+  loop: "{{ manage_users_users }}"
+  register: user_creation
+  notify: Display user creation status
+
+# Ensure .ssh directories exist for users with SSH keys
+- name: Ensure .ssh directory exists for users with SSH keys
+  ansible.builtin.file:
+    path: /home/{{ item.name }}/.ssh
+    state: directory
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+    mode: "0700"
+  loop: "{{ manage_users_users }}"
+  when: item.ssh_keys is defined and item.ssh_keys | length > 0
+  tags: ssh
+
+# Check if SSH key files exist on the control node
+- name: Check if SSH key files exist on the control node
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: ssh_key_stat
+  loop: "{{ manage_users_users | map(attribute='ssh_keys') | flatten | list }}"
+  when: item is defined
+  delegate_to: localhost
+  become: false
+  tags: ssh
+
+# Set fact for existing SSH keys
+- name: Set fact for existing SSH keys
+  ansible.builtin.set_fact:
+    existing_ssh_keys: "{{ ssh_key_stat.results | selectattr('stat.exists') | map(attribute='item') | list }}"
+  tags: ssh
+
+# Fail if no SSH keys are found
+- name: Fail if no SSH keys are found
+  ansible.builtin.fail:
+    msg: No SSH keys found for any user. Please ensure SSH keys exist at the specified paths.
+  when: existing_ssh_keys | length == 0
+  tags: ssh
+
+# Read SSH key contents
+- name: Read SSH key contents
+  ansible.builtin.slurp:
+    src: "{{ item }}"
+  register: ssh_key_contents
+  loop: "{{ existing_ssh_keys }}"
+  delegate_to: localhost
+  become: false
+  tags: ssh
+
+# Create a mapping of SSH key paths to their contents
+- name: Create SSH key path to content mapping
+  ansible.builtin.set_fact:
+    ssh_key_map: "{{ ssh_key_map | default({}) | combine({item.item: item.content | b64decode}) }}"
+  loop: "{{ ssh_key_contents.results }}"
+  no_log: true
+  tags: ssh
+
+# Manage authorized_keys files for users with existing SSH keys
+- name: Manage authorized_keys files for users with existing SSH keys
+  ansible.builtin.copy:
+    content: |
+      # Managed by Ansible - DO NOT EDIT MANUALLY
+      # This file contains SSH public keys for {{ item.name }}
+      {% for key_path in item.ssh_keys | select('in', existing_ssh_keys) | list %}
+      {{ ssh_key_map[key_path] }}
+      {% endfor %}
+    dest: /home/{{ item.name }}/.ssh/authorized_keys
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+    mode: "0600"
+  loop: "{{ manage_users_users }}"
+  when:
+    - item.ssh_keys is defined
+    - item.ssh_keys | length > 0
+    - (item.ssh_keys | select('in', existing_ssh_keys) | list) | length > 0
+  tags: ssh
+
+# Fail if any user has no SSH keys
+- name: Fail if any user has no SSH keys
+  ansible.builtin.fail:
+    msg: User '{{ item.name }}' has no valid SSH keys. Please ensure at least one SSH key exists for this user.
+  loop: "{{ manage_users_users }}"
+  when:
+    - item.ssh_keys is defined
+    - item.ssh_keys | length > 0
+    - (item.ssh_keys | select('in', existing_ssh_keys) | list) | length == 0
+  tags: ssh
+
+# Display warning for missing SSH keys
+- name: Display warning for missing SSH keys
+  ansible.builtin.debug:
+    msg: "Warning: SSH key file '{{ item.1 }}' not found for user '{{ item.0.name }}'"
+  loop: "{{ manage_users_users | product(item.ssh_keys | reject('in', existing_ssh_keys) | list) | list }}"
+  loop_control:
+    label: "{{ item.0.name }}"
+  when:
+    - item.0.ssh_keys is defined
+    - item.0.ssh_keys | length > 0
+    - (item.0.ssh_keys | reject('in', existing_ssh_keys) | list) | length > 0
+  tags: ssh
+
+# Add users to sudo group
+- name: Add users to sudo group
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    groups: "{{ manage_users_sudo_group }}"
+    append: true
+  loop: "{{ manage_users_users }}"

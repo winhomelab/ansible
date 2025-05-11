@@ -1,0 +1,51 @@
+---
+# =============================================================================
+# Initial Setup Playbook
+# =============================================================================
+# This playbook performs initial setup of ansible user and SSH configuration
+# =============================================================================
+
+- name: Initial setup of ansible user
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    # Use a user with sudo access for initial setup (like root)
+    ansible_user: root
+    ansible_ssh_private_key_file: '{{ playbook_dir }}/ssh_keys/admin_ssh_key'
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=publickey'
+  tasks:
+    - name: Gather facts
+      ansible.builtin.setup:
+
+  roles:
+    - system_updates
+    - manage_users
+    - install_wazuh
+
+- name: Verify ansible user setup
+  hosts: all
+  become: false
+  gather_facts: true
+  vars:
+    ansible_user: ansible
+    ansible_ssh_private_key_file: '{{ playbook_dir }}/ssh_keys/ansible'
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=publickey'
+  tasks:
+    - name: Test ansible user access
+      ansible.builtin.command: whoami
+      register: whoami_result
+      changed_when: false
+
+    - name: Display whoami result
+      ansible.builtin.debug:
+        msg: 'Successfully connected as {{ whoami_result.stdout }}'
+
+    - name: Test sudo access
+      ansible.builtin.command: sudo whoami
+      register: sudo_result
+      changed_when: false
+
+    - name: Display sudo result
+      ansible.builtin.debug:
+        msg: 'Successfully executed sudo command as {{ sudo_result.stdout }}'

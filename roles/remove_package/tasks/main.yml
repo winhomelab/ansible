@@ -1,0 +1,41 @@
+---
+# =============================================================================
+# Remove Package Role
+# =============================================================================
+# This role removes packages and their associated services
+# =============================================================================
+
+- name: Check if package is installed
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Stop and disable service if it exists
+  ansible.builtin.systemd:
+    name: "{{ package_name }}"
+    state: stopped
+    enabled: false
+  when: 
+    - "'{{ package_name }}' in ansible_facts.packages"
+    - stop_service | default(true)
+
+- name: Stop service using direct command if available
+  ansible.builtin.command: "{{ package_name }} disable"
+  changed_when: false
+  failed_when: false
+  when: 
+    - "'{{ package_name }}' in ansible_facts.packages"
+    - stop_service | default(true)
+    - direct_command is defined and direct_command
+
+- name: Remove main package
+  ansible.builtin.package:
+    name: "{{ package_name }}"
+    state: absent
+  when: "'{{ package_name }}' in ansible_facts.packages"
+
+- name: Remove additional packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: absent
+  loop: "{{ additional_packages }}"
+  when: additional_packages | length > 0 
