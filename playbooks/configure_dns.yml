@@ -1,0 +1,34 @@
+---
+# =============================================================================
+# DNS Configuration Playbook
+# =============================================================================
+# This playbook configures DNS settings on target hosts
+# =============================================================================
+
+- name: Configure DNS Settings
+  hosts: all
+  become: true
+  tasks:
+    - name: Configure /etc/resolv.conf with primary nameserver
+      ansible.builtin.lineinfile:
+        path: /etc/resolv.conf
+        line: "nameserver {{ hostvars['adguardhome']['ansible_host'] }}"
+        regexp: '^nameserver'
+        state: present
+      become: true
+
+    - name: Add secondary nameserver (Cloudflare)
+      ansible.builtin.lineinfile:
+        path: /etc/resolv.conf
+        line: "nameserver {{ dns_primary_server }}"
+        insertafter: '^nameserver'
+        state: present
+      become: true
+
+    - name: Add tertiary nameserver
+      ansible.builtin.lineinfile:
+        path: /etc/resolv.conf
+        line: "nameserver {{ dns_secondary_server }}"
+        insertafter: '^nameserver'
+        state: present
+      become: true

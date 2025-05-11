@@ -10,3 +10,7 @@ required_packages:
   - vim
   - curl
   - chrony
+
+# Default DNS servers if not specified in inventory
+dns_primary_server: "1.1.1.1"
+dns_secondary_server: "1.1.1.1"
