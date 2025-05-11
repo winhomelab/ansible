@@ -5,19 +5,32 @@
 # This role creates and configures users on the system
 # =============================================================================
 
-- name: Check if locale is installed
-  ansible.builtin.command: locale -a | grep -q "en_US.UTF-8"
-  register: locale_check
-  changed_when: false
-  failed_when: false
-  ignore_errors: true
-
-- name: Install locale if not present
-  ansible.builtin.locale_gen:
-    name: en_US.UTF-8
-    state: present
-  when: locale_check.rc != 0
-  notify: update locale
+- name: Configure system locale
+  block:
+    - name: Check if locales package is installed
+      ansible.builtin.package_facts:
+        manager: auto
+    
+    - name: Install locales package if not present
+      ansible.builtin.apt:
+        name: locales
+        state: present
+      when: ansible_facts.packages is defined and 'locales' not in ansible_facts.packages
+    
+    - name: Check if locale is installed
+      ansible.builtin.command: locale -a | grep -q "en_US.UTF-8"
+      register: locale_check
+      changed_when: false
+      failed_when: false
+      ignore_errors: true
+    
+    - name: Install locale if not present
+      ansible.builtin.locale_gen:
+        name: en_US.UTF-8
+        state: present
+      when: locale_check.rc != 0
+      notify: update locale
+  when: ansible_os_family == 'Debian'
 
 - name: Ensure sudo group exists
   ansible.builtin.group:
