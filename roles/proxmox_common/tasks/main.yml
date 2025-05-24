@@ -14,8 +14,8 @@
   ansible.builtin.package:
     name: "{{ item }}"
     state: present
-  loop: "{{ required_packages }}"
-  when: required_packages is defined
+  loop: "{{ proxmox_common_required_packages }}"
+  when: proxmox_common_required_packages is defined
 
 - name: Configure timezone
   ansible.builtin.timezone:
@@ -33,7 +33,7 @@
 - name: Remove existing nameserver entries
   ansible.builtin.lineinfile:
     path: /etc/resolv.conf
-    regexp: '^nameserver'
+    regexp: ^nameserver
     state: absent
   become: true
   tags: dns
@@ -41,7 +41,7 @@
 - name: Configure primary nameserver (AdGuard)
   ansible.builtin.lineinfile:
     path: /etc/resolv.conf
-    line: "nameserver {{ hostvars['adguardhome']['ansible_host'] }}"
+    line: nameserver {{ hostvars['adguardhome']['ansible_host'] }}
     state: present
   become: true
   tags: dns
@@ -49,8 +49,8 @@
 - name: Add secondary nameserver (Cloudflare)
   ansible.builtin.lineinfile:
     path: /etc/resolv.conf
-    line: "nameserver {{ dns_primary_server }}"
-    insertafter: '^nameserver'
+    line: nameserver {{ dns_primary_server }}
+    insertafter: ^nameserver
     state: present
   become: true
   tags: dns

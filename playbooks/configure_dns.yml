@@ -9,26 +9,32 @@
   hosts: all
   become: true
   tasks:
-    - name: Configure /etc/resolv.conf with primary nameserver
+    - name: Remove existing nameserver entries
+      ansible.builtin.lineinfile:
+        path: /etc/resolv.conf
+        regexp: '^nameserver'
+        state: absent
+      become: true
+
+    - name: Configure primary nameserver (AdGuard)
       ansible.builtin.lineinfile:
         path: /etc/resolv.conf
         line: "nameserver {{ hostvars['adguardhome']['ansible_host'] }}"
-        regexp: '^nameserver'
         state: present
       become: true
 
     - name: Add secondary nameserver (Cloudflare)
       ansible.builtin.lineinfile:
         path: /etc/resolv.conf
-        line: "nameserver {{ dns_primary_server }}"
+        line: "nameserver 1.1.1.1"
         insertafter: '^nameserver'
         state: present
       become: true
-
-    - name: Add tertiary nameserver
+      
+    - name: Add Google DNS as fallback
       ansible.builtin.lineinfile:
         path: /etc/resolv.conf
-        line: "nameserver {{ dns_secondary_server }}"
-        insertafter: '^nameserver'
+        line: "nameserver 8.8.8.8"
+        insertafter: '^nameserver.*1.1.1.1'
         state: present
       become: true
