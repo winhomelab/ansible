@@ -1,0 +1,9 @@
+---
+# Wazuh agent settings
+wazuh_version: "4.11.2"
+# Get Wazuh manager IP from the wazuh host in inventory
+wazuh_manager_ip: "{{ hostvars['wazuh']['ansible_host'] }}"
+# Use inventory hostname as default agent name, can be overridden with -e
+wazuh_agent_name: "{{ inventory_hostname }}"
+wazuh_agent_deb_url: "https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_{{ wazuh_version }}-1_amd64.deb"
+wazuh_agent_deb_path: "/tmp/wazuh-agent.deb"

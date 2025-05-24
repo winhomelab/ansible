@@ -1,0 +1,22 @@
+---
+# =============================================================================
+# Default Variables for Unattended Upgrades
+# =============================================================================
+
+# Update frequency (in days)
+unattended_update_package_lists: "1"  # 1 = daily
+unattended_unattended_upgrade: "1"    # 1 = daily
+unattended_download_upgradeable: "1"  # 1 = daily
+unattended_autoclean_interval: "7"    # 7 = weekly
+
+# Logging and notifications
+unattended_verbose: "2"               # 0=minimal, 1=basic, 2=verbose
+unattended_mail: "root"               # Email address for notifications
+
+# Upgrade behavior
+unattended_remove_unused: "true"      # Remove unused dependencies
+unattended_automatic_reboot: "false"  # Enable automatic reboots
+unattended_reboot_time: "02:00"       # Time for automatic reboots
+
+# Package blacklist (packages that should not be upgraded)
+unattended_package_blacklist: [] 

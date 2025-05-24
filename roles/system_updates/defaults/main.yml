@@ -1,0 +1,14 @@
+---
+# APT settings
+apt_cache_valid_time: 3600    # Cache validity in seconds (1 hour)
+apt_upgrade_type: "safe"      # Can be 'safe', 'full', or 'dist'
+apt_autoremove: true
+apt_autoclean: true
+
+# Reboot settings
+reboot_if_required: true      # Set to false to skip reboots
+reboot_message: "Reboot required after system updates"
+reboot_connect_timeout: 5
+reboot_timeout: 300
+reboot_pre_delay: 0
+reboot_post_delay: 30

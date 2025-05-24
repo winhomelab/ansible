@@ -1,0 +1,5 @@
+---
+# Required variables validation
+required_vars:
+  - name: wazuh_agent_name
+    msg: "wazuh_agent_name is required. Please provide it using -e 'wazuh_agent_name=your-agent-name'"

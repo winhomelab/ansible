@@ -1,0 +1,17 @@
+---
+# =============================================================================
+# Proxmox Common Role Defaults
+# =============================================================================
+
+# Required packages for Proxmox nodes
+proxmox_common_required_packages:
+  - htop
+  - net-tools
+  - vim
+  - curl
+  - chrony
+  - less
+
+# Default DNS servers if not specified in inventory
+dns_primary_server: 1.1.1.1
+dns_secondary_server: 1.1.1.1

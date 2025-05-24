@@ -1,0 +1,27 @@
+---
+# =============================================================================
+# Remove Package Role Default Variables
+# =============================================================================
+# Default variables for the remove_package role
+# =============================================================================
+
+# Name of the package to remove
+package_name: ""
+
+# Whether to stop the service before removing the package
+stop_service: true
+
+# Whether to use a direct command to stop the service
+direct_command: false
+
+# Additional packages to remove (dependencies)
+additional_packages: []
+
+# =============================================================================
+# Remove UFW Role Default Variables
+# =============================================================================
+# Default variables for the remove_ufw role
+# =============================================================================
+
+# Whether to remove UFW package after stopping the service
+remove_ufw_package: true 

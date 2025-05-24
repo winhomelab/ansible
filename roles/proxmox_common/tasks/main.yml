@@ -1,0 +1,56 @@
+---
+# =============================================================================
+# Proxmox Common Role
+# =============================================================================
+# This role applies common configurations to Proxmox nodes
+# =============================================================================
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Install required packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ proxmox_common_required_packages }}"
+  when: proxmox_common_required_packages is defined
+
+- name: Configure timezone
+  ansible.builtin.timezone:
+    name: "{{ timezone | default('UTC') }}"
+
+- name: Configure NTP
+  ansible.builtin.include_tasks: ntp.yml
+  when: configure_ntp | default(true)
+
+- name: Enable unattended upgrades
+  ansible.builtin.include_role:
+    name: enable_unattended_upgrades
+  when: ansible_os_family == "Debian"
+
+- name: Remove existing nameserver entries
+  ansible.builtin.lineinfile:
+    path: /etc/resolv.conf
+    regexp: ^nameserver
+    state: absent
+  become: true
+  tags: dns
+
+- name: Configure primary nameserver (AdGuard)
+  ansible.builtin.lineinfile:
+    path: /etc/resolv.conf
+    line: nameserver {{ hostvars['adguardhome']['ansible_host'] }}
+    state: present
+  become: true
+  tags: dns
+
+- name: Add secondary nameserver (Cloudflare)
+  ansible.builtin.lineinfile:
+    path: /etc/resolv.conf
+    line: nameserver {{ dns_primary_server }}
+    insertafter: ^nameserver
+    state: present
+  become: true
+  tags: dns

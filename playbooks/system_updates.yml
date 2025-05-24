@@ -1,0 +1,6 @@
+---
+- name: System Updates
+  hosts: all
+  become: true
+  roles:
+    - system_updates

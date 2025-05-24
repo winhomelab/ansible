@@ -1,0 +1,29 @@
+---
+# =============================================================================
+# Monitoring Configuration Tasks
+# =============================================================================
+
+- name: Install monitoring packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ monitoring_packages }}"
+  when: monitoring_packages is defined
+
+- name: Configure monitoring
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    mode: "{{ item.mode | default('0644') }}"
+  loop: "{{ monitoring_configs }}"
+  notify: "{{ item.notify | default('restart monitoring') }}"
+  when: monitoring_configs is defined
+
+- name: Ensure monitoring service is running
+  ansible.builtin.service:
+    name: "{{ monitoring_service }}"
+    state: started
+    enabled: true
+  when: monitoring_service is defined 
