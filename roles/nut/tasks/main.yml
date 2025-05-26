@@ -1,0 +1,72 @@
+---
+- name: Install NUT and required packages
+  ansible.builtin.package:
+    name:
+      - nut
+      - nut-client
+      - nut-server
+    state: present
+
+- name: Create NUT configuration directory
+  ansible.builtin.file:
+    path: /etc/nut
+    state: directory
+    owner: root
+    group: nut
+    mode: "0750"
+
+- name: Configure ups.conf
+  ansible.builtin.template:
+    src: ups.conf.j2
+    dest: /etc/nut/ups.conf
+    owner: root
+    group: nut
+    mode: "0640"
+  notify: restart nut-server
+
+- name: Configure upsd.conf
+  ansible.builtin.template:
+    src: upsd.conf.j2
+    dest: /etc/nut/upsd.conf
+    owner: root
+    group: nut
+    mode: "0640"
+  notify: restart nut-server
+
+- name: Configure upsd.users
+  ansible.builtin.template:
+    src: upsd.users.j2
+    dest: /etc/nut/upsd.users
+    owner: root
+    group: nut
+    mode: "0640"
+  notify: restart nut-server
+
+- name: Configure upsmon.conf
+  ansible.builtin.template:
+    src: upsmon.conf.j2
+    dest: /etc/nut/upsmon.conf
+    owner: root
+    group: nut
+    mode: "0640"
+  notify: restart nut-client
+
+- name: Configure nut.conf mode
+  ansible.builtin.template:
+    src: nut.conf.j2
+    dest: /etc/nut/nut.conf
+    owner: root
+    group: nut
+    mode: "0640"
+  notify:
+    - restart nut-server
+    - restart nut-client
+
+- name: Enable and start NUT services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  with_items:
+    - nut-server
+    - nut-client

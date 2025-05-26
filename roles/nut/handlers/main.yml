@@ -1,0 +1,10 @@
+---
+- name: restart nut-server
+  ansible.builtin.service:
+    name: nut-server
+    state: restarted
+
+- name: restart nut-client
+  ansible.builtin.service:
+    name: nut-client
+    state: restarted
