@@ -19,9 +19,11 @@
       ansible.builtin.setup:
 
   roles:
-    - system_updates
-    - manage_users
-    - install_wazuh
+    # - system_updates
+    # - manage_users
+    # - install_wazuh
+    - role: bare_metal
+      when: is_baremetal | default(false)
 
 - name: Verify ansible user setup
   hosts: all
