@@ -11,6 +11,7 @@ proxmox_common_required_packages:
   - curl
   - chrony
   - less
+  - jq
 
 # Default DNS servers if not specified in inventory
 dns_primary_server: 1.1.1.1
