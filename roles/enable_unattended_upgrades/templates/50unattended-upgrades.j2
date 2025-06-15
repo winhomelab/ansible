@@ -1,3 +1,10 @@
+// Automatically upgrade packages from these origins
+Unattended-Upgrade::Allowed-Origins {
+    "${distro_id}:${distro_codename}";
+    "${distro_id}:${distro_codename}-updates";
+    "${distro_id}:${distro_codename}-security";
+};
+
 # Update package list (in days)
 APT::Periodic::Update-Package-Lists "{{ unattended_update_package_lists }}";
 
@@ -30,4 +37,4 @@ Unattended-Upgrade::Package-Blacklist {
     "{{ package }}";
 {% endfor %}
 }
-{% endif %} 
+{% endif %}

@@ -12,18 +12,16 @@
   vars:
     # Use a user with sudo access for initial setup (like root)
     ansible_user: root
-    ansible_ssh_private_key_file: '{{ playbook_dir }}/ssh_keys/admin_ssh_key'
-    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=publickey'
   tasks:
     - name: Gather facts
       ansible.builtin.setup:
 
   roles:
-    # - system_updates
-    # - manage_users
-    # - install_wazuh
+    - system_updates
+    - manage_users
+    - install_wazuh
     - role: bare_metal
-      when: is_baremetal | default(false)
+      when: is_bare_metal | default(false)
 
 - name: Verify ansible user setup
   hosts: all
