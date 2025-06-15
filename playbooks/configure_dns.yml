@@ -19,22 +19,22 @@
     - name: Configure primary nameserver (AdGuard)
       ansible.builtin.lineinfile:
         path: /etc/resolv.conf
-        line: "nameserver {{ hostvars['adguardhome']['ansible_host'] }}"
+        line: "nameserver {{ hostvars['adguard']['ansible_host'] }}"
         state: present
       become: true
 
     - name: Add secondary nameserver (Cloudflare)
       ansible.builtin.lineinfile:
         path: /etc/resolv.conf
-        line: "nameserver 1.1.1.1"
+        line: 'nameserver 1.1.1.1'
         insertafter: '^nameserver'
         state: present
       become: true
-      
+
     - name: Add Google DNS as fallback
       ansible.builtin.lineinfile:
         path: /etc/resolv.conf
-        line: "nameserver 8.8.8.8"
+        line: 'nameserver 8.8.8.8'
         insertafter: '^nameserver.*1.1.1.1'
         state: present
       become: true
