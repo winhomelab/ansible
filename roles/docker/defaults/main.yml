@@ -5,7 +5,7 @@
 
 # List of users to add to the docker group
 # By default, includes ansible_user and target_user from global vars
-docker_users: 
+docker_users:
   - "{{ ansible_user }}"
   - "{{ target_user }}"
   # Add additional users here or override in group_vars/host_vars

@@ -15,7 +15,8 @@ stop_service: true
 direct_command: false
 
 # Additional packages to remove (dependencies)
-additional_packages: []
+additional_packages:
+  -
 
 # =============================================================================
 # Remove UFW Role Default Variables
@@ -24,4 +25,4 @@ additional_packages: []
 # =============================================================================
 
 # Whether to remove UFW package after stopping the service
-remove_ufw_package: true 
+remove_ufw_package: true

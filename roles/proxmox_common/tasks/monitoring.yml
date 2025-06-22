@@ -26,4 +26,4 @@
     name: "{{ monitoring_service }}"
     state: started
     enabled: true
-  when: monitoring_service is defined 
+  when: monitoring_service is defined

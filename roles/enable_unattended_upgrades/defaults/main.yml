@@ -19,4 +19,5 @@ unattended_automatic_reboot: "false" # Enable automatic reboots
 unattended_reboot_time: 02:00 # Time for automatic reboots
 
 # Package blacklist (packages that should not be upgraded)
-unattended_package_blacklist: []
+unattended_package_blacklist:
+  -
