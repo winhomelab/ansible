@@ -1,0 +1,9 @@
+---
+- name: Install and configure Network UPS Tools (NUT)
+  hosts: all
+  become: true
+  vars:
+    nut_monitor_password: "{{ lookup('community.general.onepassword', 'nut_monitor_password', vault='homelab-nuc-secret', field='password') }}"
+
+  roles:
+    - nut

@@ -1,0 +1,26 @@
+---
+# NUT (Network UPS Tools) configuration
+nut_mode: standalone # standalone, netserver, netclient
+
+# UPS configuration
+nut_ups_name: ups
+nut_ups_driver: usbhid-ups
+nut_ups_port: auto
+nut_ups_desc: CyberPower CP1500 AVR UPS
+nut_ups_vendor: Cyber Power System, Inc.
+nut_ups_model: CP1500 AVR
+nut_ups_vendorid: "0764"
+nut_ups_productid: "0501"
+
+# Shutdown settings
+nut_final_delay: 5 # Time between notify_shutdown and shutdown command
+nut_shutdown_timer: 30 # Timer for shutdown sequence
+
+# Monitor settings
+nut_monitor_user: upswired
+nut_monitor_password: <in 1password> # See playbook yml
+nut_monitor_power_value: 1 # Power value: 1 means primary source
+
+# Notifications
+nut_enable_notifications: true
+nut_notification_program: /usr/bin/wall # Default notification program

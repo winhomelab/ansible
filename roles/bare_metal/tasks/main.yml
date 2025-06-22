@@ -1,0 +1,14 @@
+---
+- name: Configure baremetal servers
+  block:
+    - name: Update apt package index
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          # Monitor cpu temps
+          - libsensors5
+        state: present
+        update_cache: true

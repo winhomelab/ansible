@@ -1,0 +1,11 @@
+---
+# =============================================================================
+# Configure Sudo Wheel Role - Handlers
+# =============================================================================
+# This file contains handlers for the configure_sudo_wheel role
+# =============================================================================
+
+- name: Display sudoers update status
+  ansible.builtin.debug:
+    msg: Sudoers file updated for wheel group
+  when: sudoers_update is changed

@@ -1,0 +1,12 @@
+---
+# =============================================================================
+# Docker Group Variables
+# =============================================================================
+
+# Users that should have Docker access across all Docker hosts
+docker_users:
+  - "{{ ansible_user }}"  # Ansible automation user
+  - "{{ target_user }}"   # Global target user from all.yml
+  # Add more users that should have Docker access on all Docker hosts
+  # - user1
+  # - user2

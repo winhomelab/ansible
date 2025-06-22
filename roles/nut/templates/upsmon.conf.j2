@@ -1,0 +1,50 @@
+MONITOR {{ nut_ups_name }}@localhost:3493 {{ nut_monitor_power_value }} {{ nut_monitor_user }} {{ nut_monitor_password }} primary
+MINSUPPLIES 1
+SHUTDOWNCMD "/sbin/shutdown -h now"
+POWERDOWNFLAG /etc/killpower
+NOTIFYCMD {{ nut_notification_program }}
+
+POLLFREQ 5
+POLLFREQALERT 5
+HOSTSYNC 15
+DEADTIME 15
+
+RBWARNTIME 43200
+NOCOMMWARNTIME 300
+FINALDELAY {{ nut_final_delay }}
+
+# Notification settings
+{% if nut_enable_notifications %}
+NOTIFYMSG ONLINE    "UPS [%s] on line power"
+NOTIFYMSG ONBATT    "UPS [%s] on battery"
+NOTIFYMSG LOWBATT   "UPS [%s] battery is low"
+NOTIFYMSG FSD       "UPS [%s] forced shutdown in progress"
+NOTIFYMSG COMMOK    "Communications with UPS [%s] established"
+NOTIFYMSG COMMBAD   "Communications with UPS [%s] lost"
+NOTIFYMSG SHUTDOWN  "Auto shutdown in progress"
+NOTIFYMSG REPLBATT  "UPS [%s] battery needs to be replaced"
+NOTIFYMSG NOCOMM    "UPS [%s] is unavailable"
+NOTIFYMSG NOPARENT  "upsmon parent process died - shutdown impossible"
+
+NOTIFYFLAG ONLINE   SYSLOG+WALL
+NOTIFYFLAG ONBATT   SYSLOG+WALL
+NOTIFYFLAG LOWBATT  SYSLOG+WALL
+NOTIFYFLAG FSD      SYSLOG+WALL
+NOTIFYFLAG COMMOK   SYSLOG+WALL
+NOTIFYFLAG COMMBAD  SYSLOG+WALL
+NOTIFYFLAG SHUTDOWN SYSLOG+WALL
+NOTIFYFLAG REPLBATT SYSLOG+WALL
+NOTIFYFLAG NOCOMM   SYSLOG+WALL
+NOTIFYFLAG NOPARENT SYSLOG+WALL
+{% else %}
+NOTIFYFLAG ONLINE   SYSLOG
+NOTIFYFLAG ONBATT   SYSLOG
+NOTIFYFLAG LOWBATT  SYSLOG
+NOTIFYFLAG FSD      SYSLOG
+NOTIFYFLAG COMMOK   SYSLOG
+NOTIFYFLAG COMMBAD  SYSLOG
+NOTIFYFLAG SHUTDOWN SYSLOG
+NOTIFYFLAG REPLBATT SYSLOG
+NOTIFYFLAG NOCOMM   SYSLOG
+NOTIFYFLAG NOPARENT SYSLOG
+{% endif %}
