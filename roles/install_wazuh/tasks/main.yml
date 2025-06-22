@@ -7,13 +7,13 @@
     - { name: wazuh_agent_name, msg: "wazuh_agent_name is required. Please provide it using -e 'wazuh_agent_name=your-agent-name'" }
 
 - name: Download Wazuh agent package
-  get_url:
+  ansible.builtin.get_url:
     url: "{{ wazuh_agent_deb_url }}"
     dest: "{{ wazuh_agent_deb_path }}"
     mode: '0644'
 
 - name: Install Wazuh agent
-  apt:
+  ansible.builtin.apt:
     deb: "{{ wazuh_agent_deb_path }}"
     state: present
   environment:
@@ -22,13 +22,13 @@
   notify: restart wazuh-agent
 
 - name: Ensure Wazuh agent service is enabled and started
-  systemd:
+  ansible.builtin.systemd:
     name: wazuh-agent
     daemon_reload: yes
     enabled: yes
     state: started
 
 - name: Clean up downloaded package
-  file:
+  ansible.builtin.file:
     path: "{{ wazuh_agent_deb_path }}"
     state: absent

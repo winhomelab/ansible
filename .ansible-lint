@@ -1,0 +1,4 @@
+---
+# Global ansible-lint configuration
+exclude_paths:
+  - "roles/datadog.datadog/"  # Exclude the entire datadog.datadog role directory
